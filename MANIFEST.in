@@ -1,0 +1,3 @@
+include /test_1c/chromedriver.exe
+include /test_1c/opt.txt
+include /test_1c/example_scenario.txt

@@ -2,11 +2,11 @@ from setuptools import setup, find_packages
 from os.path import join, dirname
 
 setup(
-    name='test_1c',
+    name='retail-smoke',
     version='0.26',
     packages=find_packages(),
     long_description=open(join(dirname(__file__), 'README.md')).read(),
-    entry_points={'console_scripts':['test_1c = test_1c.main:main']},
+    entry_points={'console_scripts':['retail-smoke = retail-smoke.main:main']},
     include_package_data=True,
     install_requires=[
         'selenium==3.141.0',

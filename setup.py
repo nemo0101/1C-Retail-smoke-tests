@@ -16,5 +16,5 @@ setup(
     license='',
     author="Kuznetsov Gregory",
     author_email="a925041@yandex.ru",
-    url = '',
+    url = 'https://github.com/nemo0101/1C-Retail-smoke-tests',
 )

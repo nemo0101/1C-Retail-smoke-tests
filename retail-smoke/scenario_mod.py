@@ -14,13 +14,14 @@ from keyboard_and_mouse_tools import (
     click, 
     push_button_on_keyboard, 
     set_foreground_window,
-    get_window_rect,
     set_window_pos
 )
+
 
 '''
 отвечает за воспроизведение сценариев (mode=scenario)
 '''
+
 
 def search_comment(line:str):
     if line.find('#') == -1:

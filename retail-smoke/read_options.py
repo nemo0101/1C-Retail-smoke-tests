@@ -1,9 +1,11 @@
 # -*- coding: utf8 -*
 from toolbox import log_record
 
+
 '''
 модуль для чтения настроек из текстового файла "opt.txt"
 '''
+
 
 def parse_string(line:str):
     if line.endswith('\n'):

@@ -1,5 +1,6 @@
 # -*- coding: utf8 -*
 from time import sleep
+import logging
 
 from main_data import MainData
 from toolbox import exit_prog, log_record
@@ -27,6 +28,7 @@ from keyboard_and_mouse_tools import (
 модуль для запуска браузера и входа в 1с
 '''
 
+
 def init_prog(tuple_main_data:tuple):
     '''
     получает пустой кортеж,
@@ -53,11 +55,13 @@ def start_browser(main_data:object):
         main_data.driver(),
         main_data.auth_win(),
         1000):
-            main_data.set_hwnd(hwnd)
-            main_data.set_win_rect(win_rect)
-            return main_data
+        sleep(5)
+        main_data.set_hwnd(hwnd)
+        main_data.set_win_rect(win_rect)
+        return main_data
     else:
         get_webdriver_quit(main_data.driver())
+        logging.shutdown()
         exit_prog()
 
 
@@ -84,6 +88,11 @@ def login_base(main_data:object):
                         main_data.ok_button_opt()
         )
     )
+    if login_elem == None or password_elem == None or ok_elem == None:
+        get_webdriver_quit(main_data.driver())
+        logging.shutdown()
+        exit_prog()
+
     simple_enter_text(
         main_data,
         login_elem,
@@ -98,10 +107,12 @@ def login_base(main_data:object):
 
     if wait_window(
         main_data.driver(),
-        main_data.mainmenu()[0],
+        'themesCellLimiter',
         1000
         ) == True:
+            sleep(5)
             if wait_window(main_data.driver(), 'ps0formHeaderTitle', 10) == True:
+                sleep(5)
                 push_button_on_keyboard(
                     main_data.hwnd(), 
                     main_data.wscript_shell(), 
@@ -112,20 +123,16 @@ def login_base(main_data:object):
             return main_data
     else:
         get_webdriver_quit(main_data.driver())
+        logging.shutdown()
         exit_prog()
 
 
 def reload(main_data:object):
     if search_hwnd(main_data.hwnd()) == False:
         '''
-        table = main_data.table_elements()
-        main_data = login_base(
-            start_browser(
-                init_prog(tuple())
-            )
-        )
-        main_data.set_table_elements(table)
-        log_record('выполнен перезапуск')
+
         '''
+        get_webdriver_quit(main_data.driver())
+        logging.shutdown()
         exit_prog()
 

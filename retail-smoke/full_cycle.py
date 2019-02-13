@@ -1,28 +1,29 @@
 # -*- coding: utf8 -*
 from time import sleep
 
-from webdriver import (get_main_or_section_menu, 
-                       get_webdriver_quit, 
+from webdriver import (get_webdriver_quit, 
                        get_page, 
                        wait_window,
                        find_one_element_by_id,
                        find_many_elements_by_tag_name,
-                       get_info_from_element,
                        get_the_number_of_pages,
-                       get_elem_rect)
+                       get_info_from_element)
 from parse_webelements import (parse_elements_by_text,
                                fix_text_matches,
                                parse_elements_on_page,
-                               rec_search_last_open_table,
                                sort_table)
 from keyboard_and_mouse_tools import (push_button_on_keyboard,
                                       save_screenshot,
                                       simple_click,
                                       simple_enter_text,
                                       search_element_pos)
-from toolbox import log_record, exit_prog, setup_key_for_table, setup_existing_key_for_table
-from serializer import read_serialize_data, write_serialize_data
+from toolbox import log_record
 from init_program import reload
+
+
+'''
+основная логика работы для режимов savemenu, go, go_partial
+'''
 
 
 def wait_win_1c_head(main_data:object):
@@ -37,19 +38,24 @@ def wait_win_1c_head(main_data:object):
         1
         ) == True:
             log_record('обнаружено окно: 1С:Предприятие')
-            sleep(2)
+            sleep(5)
             save_screenshot()
             element_box_1 = find_one_element_by_id(main_data.driver(), 'messageBoxTable')
             element_box_2 = find_one_element_by_id(main_data.driver(), 'ps2formContent')
-            elements = parse_elements_on_page(
-                        find_many_elements_by_tag_name(element_box_1, 'button')
-            ) 
-            elements += parse_elements_on_page(
-                        find_many_elements_by_tag_name(element_box_2, 'span')
-            )
+            if element_box_1 == None:
+                log_record('не удалось обнаружить окно 1С:Предприятия - завершена работа программы')
+                reload(main_data)
+            elements = find_many_elements_by_tag_name(element_box_1, 'button')
+            elements += find_many_elements_by_tag_name(element_box_2, 'span')
+            elements_dict = []
+            for x in elements:
+                elements_dict.append(get_info_from_element(x))
+            if len(elements_dict) == 0:
+                log_record('не удалось установить кнопки окна 1С:Предприятия - завершена работа программы')
+                reload(main_data)
             buttons_list_text = []
             buttons_list = []
-            for i in elements:
+            for i in elements_dict:
                 if i['text_elem'] == 'Да' or \
                    i['text_elem'] == 'Нет' or \
                    i['text_elem'] == 'Отмена' or \
@@ -66,7 +72,7 @@ def wait_win_1c_head(main_data:object):
             flag = False
             if flag == False:
                 for i in res_list:
-                    if i == 'OK' or i == 'Продолжить'  or i == 'Закрыть':
+                    if i == 'OK' or i == 'Продолжить' or i == 'Закрыть':
                         flag = True
                         for y in buttons_list:
                             if y['text_elem'] == i:
@@ -96,7 +102,6 @@ def wait_win_1c_head(main_data:object):
 
             if flag == False and element_box_1 != None:
                 log_record('не удалось закрыть окно 1С:Предприятия - завершена работа программы')
-                get_webdriver_quit(main_data.driver())
                 reload(main_data)
 
 
@@ -113,7 +118,7 @@ def wait_msg(main_data):
         ) == True:
             flag = False
             log_record('обнаружено окно: Сообщить ')
-            sleep(2)
+            sleep(5)
             save_screenshot()
             push_button_on_keyboard(main_data.hwnd(), main_data.wscript_shell(), 'close_msg')
 
@@ -139,12 +144,10 @@ def get_table_main_menu(main_data:object):
     '''
     sleep(1)
     
-    table = setup_key_for_table(
-                fix_text_matches(
-                    parse_elements_by_text(
-                        get_main_or_section_menu(
-                            main_data.driver(), main_data.mainmenu()
-                        )
+    table = fix_text_matches(
+                parse_elements_by_text(
+                    get_page(
+                        main_data.driver(), 'main'
                     )
                 )
             )
@@ -164,13 +167,11 @@ def get_table_section_menu(main_data:object):
     main_table = main_data.table_elements()['table']
     for dict_element in main_table:
         simple_click(main_data, dict_element)
-        table = setup_key_for_table(
-                            fix_text_matches(
-                                parse_elements_by_text(
-                                    get_main_or_section_menu(
-                                        main_data.driver(), 
-                                        main_data.sectionmenu()
-                                    )
+        table = fix_text_matches(
+                            parse_elements_by_text(
+                                get_page(
+                                    main_data.driver(), 
+                                    'section'
                                 )
                             )
                         )
@@ -182,14 +183,36 @@ def get_table_section_menu(main_data:object):
     return main_data
 
 
+def get_current_page(driver:object, tags_elem:tuple):
+    '''
+    получает таблицу текущей открытой страницы
+    возвращаемый кортеж:
+    '''
+    current_pages_len = get_the_number_of_pages(driver)
+    table_elements = sort_table(
+                            parse_elements_on_page(
+                                get_page(driver, 'page')
+                            )
+                        )
+    return {
+        'dir':tuple(),
+        'table':table_elements, 
+        'len_table':len(table_elements), 
+        'number_of_pages':current_pages_len, 
+        'context_tables':tuple()
+    }
+
+
 def menu_full_cycle_go(main_data:object):
     '''
     запускает построение таблицы меню и таблиц вложенных в ее разделы
     возвращает построенную таблицу в объекте
     '''
-    return get_table_section_menu(
+    table = get_table_section_menu(
                 get_table_main_menu(main_data)
     )
+    push('esc', 1, main_data)
+    return table
 
 
 def eval_new_table(base_table:dict, current_table:dict):
@@ -210,9 +233,7 @@ def eval_new_table(base_table:dict, current_table:dict):
     flag_equal = False
     for dict_element in current_table['table']:
         for x in base_table['table']:
-            if x['node_name'] == dict_element['node_name'] and\
-               x['text_elem'] == dict_element['text_elem'] and\
-               x['rect_elem'] == dict_element['rect_elem']:
+            if x['id_elem'] == dict_element['id_elem']:
                 flag_equal = True
                 break
         if flag_equal == True:
@@ -221,11 +242,8 @@ def eval_new_table(base_table:dict, current_table:dict):
             continue
         else:
             new_table_append(dict_element)
-    new_table = setup_key_for_table(tuple(new_table))
-    key = new_table[0]['key_table']
-    old_table = setup_existing_key_for_table(key, tuple(old_table))
-    current_table['table'] = new_table
-    current_table['context_tables'] += old_table
+    current_table['table'] = tuple(new_table)
+    current_table['context_tables'] += tuple(old_table)
     return current_table
 
 
@@ -258,33 +276,13 @@ def compare_page_len(base_table:dict, current_page:dict):
     return result
 
 
-def get_current_page(driver:object, tags_elem:tuple):
-    '''
-    получает таблицу текущей открытой страницы
-    возвращаемый кортеж из трех элементов:
-    '''
-    current_pages_len = get_the_number_of_pages(driver)
-    table_elements = sort_table(
-                            parse_elements_on_page(
-                                get_page(driver, tags_elem)
-                            )
-                        )
-    return {
-        'table':table_elements, 
-        'len_table':len(table_elements), 
-        'number_of_pages':current_pages_len, 
-        'context_tables':tuple()
-    }
-
-
 def compare_table(base_table:dict, main_data:object):
     '''
-    в зависимости от количества элементов прошлой, в базе, 
+    в зависимости от количества элементов
     текщей страницы решает,
     что вернуть в качестве новой таблицы.
     '''
-    page_opt = (main_data.page(), main_data.elements(),)
-    current_page = get_current_page(main_data.driver(), page_opt)
+    current_page = get_current_page(main_data.driver(), 'page')
     res_flag = compare_page_len(base_table, current_page)
     if res_flag == 1:
         result_table = current_page
@@ -295,19 +293,15 @@ def compare_table(base_table:dict, main_data:object):
     return (res_flag, result_table,)
 
 
-def return_by_the_click_map(main_data:object, key:float):
+def return_by_the_click_map(main_data:object, table:tuple):
     '''
-    получает карту из последних нажатых элементов в каждой таблице 
-    вплоть до таблици с ключом key
+    получает путь, состоящий из элементов, который нужно нажать чтобы открыть данную таблицу.
     последовательно нажимает эти элементы
     '''
-    log_record('восстановление таблицы')
-    click_map = rec_search_last_open_table(main_data.table_elements(), key)
-
-    len_click_map = len(click_map)
+    len_click_map = len(table['dir'])
     if len_click_map > 0:
         push('esc', len_click_map, main_data)
-        for dict_element in click_map:
+        for dict_element in table['dir']:
             simple_click(main_data, dict_element)
             sleep(2)
 
@@ -333,132 +327,84 @@ def click_or_enter_text(dict_element:dict, main_data:object):
         reload(main_data)
 
 
-def auxiliary_check_cycle(main_data:object, table, dict_element, limit):
-    limit -= 1
-    if limit == 0:
-        log_record('не удалось вернутся к требуемой таблице, работа приложения прекращена')
-        get_webdriver_quit(main_data.driver())
-        exit_prog()
-    log_record('сравнение таблиц')
-    result_table = compare_table(table, main_data)
-    if result_table[0] != 0:
-        return_by_the_click_map(main_data, dict_element['key_table'])
-        auxiliary_check_cycle(main_data, table, dict_element, limit)
-        dict_element['click'] = True
-        click_or_enter_text(dict_element, main_data)
-    else:
-        dict_element['click'] = True
-        click_or_enter_text(dict_element, main_data)
-
-
-def cycle(table:dict, main_data:object, switch_click_map = False):
+def test(curr_table, main_data:object):
     '''
-    рекурсивная функция обхода таблиц.
+    обход элементов каждой таблицы
     '''
-    for index, dict_element in enumerate(table['table']):
-        '''
-        если в каталоге программы присутствует файл data_memory.pickle
-        обход начинается с того места где прервался при прошлом запуске
-        '''
-        if switch_click_map == True:
-            if dict_element['click'] == False:
-                last_item = table['table'][index - 1]
-                if len(last_item['table']['table']) > 0:
-                    simple_click(main_data, last_item)
-                    table = cycle(last_item['table'], main_data, True)
-            else:
-                continue
-        '''
-        далее программа нажимает на каждый элемент в таблице, если при нажатии
-        открывается новая страница, программа формирует таблицу и помещает ее к элементу.
-        '''
-        write_serialize_data('data_memory', main_data.table_elements())
-        if dict_element['click'] == False:
-            '''
-            оценка результата предыдущего нажатия
-            '''
-            log_record('сравнение таблиц')
-            result_table = compare_table(table, main_data)
-            '''
-            принятие решения согласно оценке
-            '''
-            if index != 0:
-                previous_dict_element = table['table'][index - 1]
-            else:
-                previous_dict_element = dict_element
+    len_dir_table = len(curr_table['dir'])
+    res_table = []
+    res_table_append = res_table.append
+    for elem in curr_table['table']:
+        click_or_enter_text(elem, main_data)
+        log_record(elem['id_elem'] + ' / ' + elem['text_elem'])
+        #оценка результата нажатия
+        log_record('сравнение таблиц')
+        result_table = compare_table(curr_table, main_data)
+        #принятие решения согласно оценке
+        if result_table[0] == 1 or result_table[0] == 0.5:
+            result_table[1]['dir'] = curr_table['dir'] + (elem,)
+            res_table_append(result_table[1])
+            push('esc', len_dir_table, main_data)
+            return_by_the_click_map(main_data, curr_table)
+        else:
+            push('esc', len_dir_table, main_data)
+            return_by_the_click_map(main_data, curr_table)
+    push('esc', len_dir_table, main_data)
+    return tuple(res_table)
 
-            if result_table[0] == 1:
-                previous_dict_element['table'] = result_table[1]
 
-                subordinate_table = cycle(previous_dict_element['table'], main_data)
+def start(main_data:object):
+    '''
+    основной обход по таблицам. 
+    после того как работа с таблицей заканчивается
+    ей присваивается значение None
+    '''
+    table = main_data.table_elements()
+    for val in table:
+        if val['table'] != None:
+            return_by_the_click_map(main_data, val)
+            table += test(val, main_data)
 
-                previous_dict_element['table'] = subordinate_table
-                push('esc', 1, main_data)
-                auxiliary_check_cycle(main_data, table, dict_element, 5)
+            val['dir'] = None
+            val['table'] = None
+            val['len_table'] = None
+            val['number_of_pages'] = None
+            val['context_tables'] = None
 
-            elif result_table[0] == 0.5:
-                previous_dict_element['table'] = result_table[1]
 
-                subordinate_table = cycle(previous_dict_element['table'], main_data)
-
-                previous_dict_element['table'] = subordinate_table
-                push('esc', 1, main_data)
-                auxiliary_check_cycle(main_data, table, dict_element, 5)
-
-            elif result_table[0] == 0:
-                dict_element['click'] = True
-                click_or_enter_text(dict_element, main_data)
-
-            elif result_table[0] == -1:
-                auxiliary_check_cycle(main_data, table, dict_element, 5)
-
-            elif result_table[0] == -0.5:
-                auxiliary_check_cycle(main_data, table, dict_element, 5)
+def get_page_info(main_data:object, x:dict, y:dict):
+    '''
+    собирает данные со страниц
+    выстраивает пути к ним
+    '''
+    simple_click(main_data, x)
+    simple_click(main_data, y)
+    table = get_current_page(
+                main_data.driver(), 
+                'page'
+    )
+    table['dir'] += (x, y,)
+    push('esc', 2, main_data)
     return table
 
 
-def go_section_menu(dict_element:dict, main_data:object):
+def go_menu(main_data:object):
     '''
-    начинает обход по меню разделов
+    первый поверхностный обход
     '''
-    dict_element['click'] = True
-    for x in dict_element['table']['table']:
-        if x['click'] == False:
-            click_or_enter_text(dict_element, main_data)
-            x['click'] = True
-            click_or_enter_text(x, main_data)
-            result_table = compare_table(dict_element['table'], main_data)
-            if result_table[0] == 1:
-                x['table'] = result_table[1]
-
-                table = cycle(x['table'], main_data)
-
-                if main_data.table_opt() == 'Yes':
-                    x['table'] = table
-                elif main_data.table_opt() == 'No':
-                    x['table'] = {'table':tuple(), 'len_table':0, 'number_of_pages':0, 'context_tables':tuple()}
-
-
-def go_menu(main_data:object, start_flag:str):
-    '''
-    начинает обход по главному меню
-    '''
-    if start_flag == 'start_main':
-        main_table = main_data.table_elements()['table']
-        for dict_element in main_table:
-            if dict_element['click'] == False:
-                go_section_menu(dict_element, main_data)
-    elif start_flag == 'start_click_map':
-        table = cycle(main_data.table_elements(), main_data, True)
+    list_curr_table = []
+    list_curr_table_append = list_curr_table.append
+    for x in main_data.table_elements()['table']:
+        for y in x['table']['table']:
+            list_curr_table_append(
+                get_page_info(main_data, x, y)
+            )
+    main_data.set_table_elements(tuple(list_curr_table))
+    start(main_data)
 
 
 def page_full_cycle_go(main_data:object):
     '''
     выбирает метод обхода: либо с сохраненного места (data_memory.pickle) либо с начала
     '''
-    data_memory = read_serialize_data('data_memory', False)
-    if data_memory != None and len(data_memory['table']) > 0:
-        main_data.set_table_elements(data_memory)
-        go_menu(main_data, 'start_click_map')
-    else:
-        go_menu(main_data, 'start_main')
+    go_menu(main_data)

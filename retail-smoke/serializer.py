@@ -1,5 +1,6 @@
 # -*- coding: utf8 -*
 from pickle import dump, load
+import logging
 
 from os import (
     path,
@@ -13,15 +14,16 @@ from toolbox import (
         try_except_log_ret,
         log_record)
 
+
 '''
 сохраняет кортежи в файлы в папке с программой
 '''
 
+
 def start_swith_filter(template_text:str, filename_text:str):
-        try:
-                result = filename_text.startswith(template_text)
-        except:
-                log_record('не удалось проверить начинается ли файл с заданного шаблона')
+        if template_text in filename_text:
+                result = True
+        else:
                 result = False
         return result
 
@@ -38,7 +40,10 @@ def get_filenames_in_curdir(text:str, current_dir):
 def remove_files(files:tuple, current_dir):
         for i in files:
                 file_dir = current_dir + '\\' + i
-                try_except_log(remove, file_dir)
+                try:
+                        remove(file_dir)
+                except:
+                        log_record('не удалось удалить файл: ' + str(file_dir))
 
 
 def write_serialize_data(text:str, data, remove_arg=True):
@@ -69,3 +74,17 @@ def read_serialize_data(text:str, remove_arg=True):
         else: 
                 data = None
         return data
+
+
+def delete_screens_and_log():
+        current_dir = try_except_log_ret(path.abspath, curdir)
+        screens = get_filenames_in_curdir('screen_', current_dir)
+        log_txt = get_filenames_in_curdir('log', current_dir)
+        dict_main_elements = get_filenames_in_curdir('dict_main_elements', current_dir)
+        if len(screens) > 0:
+                remove_files(screens, current_dir)
+        if len(log_txt) > 0:
+                logging.shutdown()
+                remove_files(log_txt, current_dir)
+        if len(dict_main_elements) > 0:
+                remove_files(dict_main_elements, current_dir)

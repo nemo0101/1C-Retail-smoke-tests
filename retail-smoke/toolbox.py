@@ -8,8 +8,7 @@ from win32clipboard import (
     )
 
 from sys import exit
-from time import ctime, sleep
-from random import random
+from time import ctime
 import logging
 
 
@@ -60,23 +59,6 @@ def copy_to_clipboard(text:str):
 def exit_prog():
     exit()
     log_record('программа завершила свою работу')
-    
-
-def setup_key_for_table(table:tuple):
-    try:
-        key = random()
-    except:
-        log_record('не удалось получить уникальное число для ключа таблицы')
-        key = 0
-    for x in table:
-        x['key_table'] = key
-    return table
-
-
-def setup_existing_key_for_table(key:float, table:tuple):
-    for x in table:
-        x['key_table'] = key
-    return table
 
 
 def cons_input():

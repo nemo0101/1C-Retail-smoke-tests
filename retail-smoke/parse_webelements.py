@@ -1,6 +1,7 @@
 # -*- coding: utf8 -*
 from webdriver import get_info_from_element
 
+
 '''
 здесь находятся функции связанные с парсингом элементов
 '''
@@ -23,7 +24,7 @@ def select_elements_by_text(element:dict):
 def parse_elements_by_text(elements:tuple):
     table = tuple()
     for x in elements:
-        dict_element = get_info_from_element(x, 'filter_for_main_menu')
+        dict_element = get_info_from_element(x)
         if dict_element != None:
             if select_elements_by_text(dict_element) == True:
                 table += (dict_element,)
@@ -36,11 +37,31 @@ def search_in_dict_tuple(text:str, dict_tuple:tuple):
             return dict_elem
 
 
-def fix_text_matches(table:tuple):
+def part_id(str_test):
+    len_str_test = len(str_test)
+    if len_str_test > 2:
+        part_str_test = round(len(str_test)*66/100)
+        res_str = str_test[0:part_str_test]
+    else:
+        res_str = str_test
+    return res_str
+
+
+def fix_text_matches(table:tuple, str_mode = ''):
     work_list = []
     work_list_append = work_list.append
-    for dict_element in table:
-        work_list_append(dict_element['text_elem'])
+
+    for index, value in enumerate(table):
+        if str_mode == 'page':
+            if index == 0:
+                work_list_append(value['text_elem'])
+            else:
+                if part_id(value['id_elem']) in table[index-1]['id_elem']:
+                    continue
+                work_list_append(value['text_elem'])
+        else:
+            work_list_append(value['text_elem'])
+
     work_list = list(set(work_list))
     result_list = []
     result_list_append = result_list.append
@@ -75,10 +96,7 @@ def parse_elements_on_page(elements:tuple):
         dict_element = get_info_from_element(x)
         if dict_element != None:
             table = devide_by_presence_text(table, dict_element)
-    table_with_text = table[0]
-    table_without_text = table[1]
-    table_with_text = fix_text_matches(table_with_text)
-    final_table = table_with_text + table_without_text
+    final_table = fix_text_matches(table[0], 'page') + table[1]
     return final_table
 
 
@@ -88,19 +106,3 @@ def sort_table(table_tuple:tuple):
     table.sort(key=lambda val: val['node_name'] == 'BUTTON')
     table.sort(key=lambda val: val['node_name'] == 'INPUT', reverse=True)
     return tuple(table)
-
-
-def rec_search_last_open_table(bypass_table:tuple, key, click_map = []):
-    if len(bypass_table['table']) != 0 and bypass_table['table'][0]['key_table'] != key:
-        bypass_table = list(bypass_table['table'])
-        bypass_table.reverse()
-        click_map_append = click_map.append
-        for dict_element in bypass_table:
-            '''
-            находит последнего нажатого с заполненной таблицей
-            '''
-            if dict_element['click'] == True and len(dict_element['table']['table']) != 0:
-                click_map_append(dict_element)
-                rec_search_last_open_table(dict_element['table'], key, click_map)
-                break
-    return tuple(click_map)

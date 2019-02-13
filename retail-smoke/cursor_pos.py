@@ -1,8 +1,13 @@
 # -*- coding: utf8 -*
 from time import sleep
 
-from keyboard_and_mouse_tools import get_cursor_pos, get_window_rect
+from keyboard_and_mouse_tools import get_cursor_pos
 from toolbox import log_record
+
+
+'''
+бесконечно выводит в консоль позицию курсора и размеры окна
+'''
 
 
 def cursor_pos(main_data:object):

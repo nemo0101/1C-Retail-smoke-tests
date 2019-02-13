@@ -41,9 +41,11 @@ from webdriver import (webelement_enter_text,
                        get_info_from_element, 
                        find_one_element_by_id)
 
+
 '''
 модуль для работы с мышью и клавиатурой
 '''
+
 
 def return_wscript_shell():
     try:
@@ -125,8 +127,8 @@ def push_button_on_keyboard(hwnd:int, wscript_shell:object, key:str, count=1):
             for x in range(count):
                 set_foreground_window(hwnd)
                 wscript_shell.SendKeys(key_value)
-                log_record('выполнено нажатие: ' + key_value)
-                sleep(1)
+                #log_record('выполнено нажатие: ' + key_value)
+                sleep(0.5)
         except:
             log_record('не удалось нажать на кнопку: ' + key)
 
@@ -147,14 +149,14 @@ def mouse_event_func(event):
 
 def click(x:int, y:int):
     set_cursor_pos(x, y)
-    sleep(1)
+    sleep(0.5)
     mouse_event_func(MOUSEEVENTF_LEFTDOWN)
     mouse_event_func(MOUSEEVENTF_LEFTUP)
 
 
 def click_right(x:int, y:int):
     set_cursor_pos(x, y)
-    sleep(1)
+    sleep(0.5)
     mouse_event_func(MOUSEEVENTF_RIGHTDOWN)
     mouse_event_func(MOUSEEVENTF_RIGHTUP)
 
@@ -204,6 +206,8 @@ def search_element_pos(dict_element, main_data, count=5):
             new_elem = get_info_from_element(
                         find_one_element_by_id(main_data.driver(), id_elem)
             )
+            if new_elem == None:
+                continue
             x = new_elem['rect_elem']['x']
             y = new_elem['rect_elem']['y']
             id_elem = new_elem['id_elem']
@@ -247,7 +251,7 @@ def click_in_test(hwnd:int,
             log_record('выполнено нажатие: ' + element['text_elem'] + ' координаты: ' + str(x) + ' / ' + str(y))
         elif one_or_two_click == 'two':
                 click(x, y)
-                sleep(1)
+                sleep(0.5)
                 click(x, y)
                 log_record('выполнено двойное нажатие: ' + element['text_elem'] + ' координаты: ' + str(x) + ' / ' + str(y))
 

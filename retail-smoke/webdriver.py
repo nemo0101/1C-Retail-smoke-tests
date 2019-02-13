@@ -3,11 +3,68 @@ from selenium import webdriver
 
 from time import sleep
 
-from toolbox import log_record, try_except_log_ret
+from toolbox import log_record
+
 
 '''
 модуль с функциями связанными с фреймворком selenium
 '''
+
+
+def get_filter_string(flag:str):
+    filter_for_span_a_button_only = "@id != contains(@id, 'КоманднаяПанель') and \
+                                        @id != contains(@id, 'КнопкаПечать') and \
+                                        @id != contains(@id, 'КнопкаВыбора') and \
+                                        @id != contains(@id, 'Органайзер') and \
+                                        @id != contains(@id, 'ПодменюСоздатьНаОсновании') and \
+                                        @id != contains(@id, 'CloseButton') and \
+                                        @id != contains(@id, 'NavigateBackButton') and \
+                                        @id != contains(@id, 'NavigateForwardButton') and \
+                                        @id != contains(@id, 'Справка') and \
+                                        @id != contains(@id, 'ПредварительныйПросмотр') and \
+                                        @id != contains(@id, 'panelClose') and \
+                                        @id != contains(@id, 'ECSFormButton') and \
+                                        @id != contains(@id, 'NavigateHomeButton') and \
+                                        @id != contains(@id, 'navigateButtons') and \
+                                        @id != contains(@id, 'РазвернутьСвернутьТЧ') and \
+                                        @id != contains(@id, 'GetURLButton') and \
+                                        @id != contains(@id, 'CalculatorButton') and \
+                                        @id != contains(@id, 'CalendarButton') and \
+                                        @id != contains(@id, 'SetBuffButton') and \
+                                        @id != contains(@id, 'AddBuffButton') and \
+                                        @id != contains(@id, 'SubBuffButton') and \
+                                        @id != contains(@id, 'ScaleFormButton') and \
+                                        @id != contains(@id, 'ToolbarMaxMinButton')"
+
+    filter_for_div_only = "contains(@id, 'text_div') or \
+                            contains(@id, 'title_text') or \
+                            contains(@id, 'Подсистема') or \
+                            contains(@id, 'Группа') or \
+                            contains(@id, 'thpage')"
+
+    filter_for_div_only_for_main = "contains(@id, 'themesCell')"
+    filter_for_div_only_for_section = "contains(@id, 'cmd_')"
+    
+    filter_div = ".//div[" + filter_for_div_only + "]"
+    filter_span = ".//span[@id != '' and " + filter_for_span_a_button_only + "]"
+    filter_input = ".//input[@id != '']"
+    filter_button = ".//button[@id != '' and " + filter_for_span_a_button_only + "]"
+    filter_textarea = ".//textarea[@id != '']"
+    filter_label = ".//label[@id != '']"
+    filter_a = ".//a[@id != '' and " + filter_for_span_a_button_only + "]"
+    
+    filter_for_main = ".//div[" + filter_for_div_only_for_main + "]"
+    filter_for_section = ".//div[" + filter_for_div_only_for_section + "]"
+    filter_all = filter_div + " | " + filter_span + " | " + filter_input + " | " + filter_button + " | " + filter_textarea + " | " + filter_label + " | " + filter_a
+
+    if flag == 'main':
+        return_str = filter_for_main
+    elif flag == 'section':
+        return_str = filter_for_section
+    else:
+        return_str = filter_all
+    return return_str
+
 
 def get_webdriver():
     try:
@@ -37,7 +94,7 @@ def find_one_element_by_id(driver:object, id_str:str):
     try:
         element = driver.find_element_by_id(id_str)
     except:
-        log_record('не удалось получить элемент по id: ' + id_str)
+        #log_record('не удалось получить элемент по id: ' + id_str)
         element = None
     return element
 
@@ -52,6 +109,26 @@ def find_many_elements_by_tag_name(driver_or_element, tag_name:str):
     return elements
 
 
+def find_many_elements_by_part_id(element:object, part_id_str:str, node_context:str):
+    try:
+        elements = element.find_elements_by_xpath(".//" + node_context + "[contains(@id," + part_id_str + ")]")
+        tuple(elements)
+    except:
+        log_record('не удалось получить элементы по id: ' + part_id_str)
+        elements = tuple()
+    return elements
+
+
+def find_many_elements_by_xpath(driver_or_element, xpath:str):
+    try:
+        elements = driver_or_element.find_elements_by_xpath(xpath)
+        tuple(elements)
+    except:
+        log_record('не удалось получить элементы по xpath')
+        elements = tuple()
+    return elements
+
+
 def webdriver_get_window_rect(driver:object):
     try:
         window_rect = driver.get_window_rect()
@@ -61,32 +138,33 @@ def webdriver_get_window_rect(driver:object):
     return window_rect
 
 
-def get_main_or_section_menu(driver:object, option:tuple):
-    return find_many_elements_by_tag_name(
-        find_one_element_by_id(driver, option[0]), 
-        option[1]
-    )
-
-
-def get_page(driver:object, option:tuple):
-    list_of_all_elements = tuple()
-    for x in option[1]:
-        elements = find_many_elements_by_tag_name(
-                        find_one_element_by_id(driver, option[0]), 
-                        x
+def get_page(driver:object, menu_flag:str):
+    if menu_flag == 'main':
+        elements = find_many_elements_by_xpath(
+            find_one_element_by_id(driver, 'themesCellLimiter'), 
+            get_filter_string(menu_flag)
         )
-        list_of_all_elements += tuple(elements)
-    return list_of_all_elements
+    elif menu_flag == 'section':
+        elements = find_many_elements_by_xpath(
+            find_one_element_by_id(driver, 'funcPanel_panelCnt'), 
+            get_filter_string(menu_flag)
+        )
+    else:
+        elements = find_many_elements_by_xpath(
+            find_one_element_by_id(driver, 'pages_container'), 
+            get_filter_string(menu_flag)
+        )
+    return elements
 
 
 def wait_window(driver:object, id_str:str, counter:int):
     result = False
     for i in range(counter):
         element = find_one_element_by_id(driver, id_str)
-        if element:
+        if element != None:
             result = True
             break
-        sleep(1)
+        sleep(0.2)
     return result
 
 
@@ -118,65 +196,6 @@ def webelement_enter_text(driver:object, element:dict, text:str):
         except:
             flag = False
         return flag
-
-
-def check_div(id_text:str):
-    '''
-    выбирает разрешенные элементы div по части иx id
-    '''
-    flag = False
-    if 'text_div' in id_text or\
-    'title_text' in id_text or\
-    'Подсистема' in id_text or\
-    'Группа' in id_text or\
-    'thpage' in id_text:
-        flag = True
-    return flag
-
-
-def filter_for_page(node_name:str, text_elem:str, id_elem:str):
-    flag = False
-    if node_name == '' or \
-       id_elem == '' or\
-       node_name == 'DIV' and text_elem == '' or \
-       node_name == 'DIV' and check_div(id_elem) == False or \
-       node_name == 'SPAN' and text_elem == '':
-        flag = True
-    return flag
-
-
-def filter_for_main_menu(node_name:str, text_elem:str, id_elem:str):
-    flag = True
-    if node_name != '' and \
-       node_name == 'DIV' and text_elem != '' and \
-       node_name == 'DIV' and 'cmd_' in id_elem or \
-       node_name == 'DIV' and 'themesCell' in id_elem or \
-       node_name == 'SPAN' and text_elem != '':
-        flag = False
-    return flag
-
-
-def cheсk_in_except_table(text_el:str, id_el:str):
-    '''
-    фильтрует элементы которые не нужны
-    '''
-    flag = False
-    if text_el == 'Еще' or \
-       text_el == 'Печать' or \
-       'КнопкаПечать' in id_el or\
-       'ПодменюСоздатьНаОсновании' in id_el or \
-       'CloseButton' in id_el == True or \
-       'NavigateBackButton' in id_el or \
-       'NavigateForwardButton' in id_el or \
-       'Справка' in id_el or \
-       'ПредварительныйПросмотр' in id_el or \
-       'panelClose' in id_el or\
-       'ECSFormButton' in id_el or\
-       'NavigateHomeButton' in id_el or\
-       'navigateButtons' in id_el or\
-       'РазвернутьСвернутьТЧ' in id_el:
-        flag = True
-    return flag
 
 
 def check_is_displayed(element:object):
@@ -219,16 +238,14 @@ def get_elem_id(element:object):
     return id_elem
 
 
-def get_info_from_element(element:object, filter_mode='filter_for_page'):
+def get_info_from_element(element:object):
     '''
     функция берет данные из элемента и возвращает словарь:
     {
-        'key_table':None, - идентификатор таблицы сгенирированный из случайных чисел
         'id_elem':id_elem - id элемента
         'node_name':node_name, - значение тэга элемента
         'text_elem':text_elem, - текст внутри элемента
         'rect_elem':rect_elem, - словарь размеров и координат элементов 
-        'click': False, - параметр обозначающий было ли произведено нажатие на элемент
         'table': None - содержит кортеж новых словарей с элементами которые появились после нажатия на данный элемент
     }
     '''
@@ -236,22 +253,11 @@ def get_info_from_element(element:object, filter_mode='filter_for_page'):
     if check_is_displayed(element) == True:
         rect_elem = get_elem_rect(element)
         if rect_elem != None and rect_elem['y'] != 0:
-            node_name = get_elem_nodname(element)
-            text_elem = get_elem_text(element)
-            id_elem = get_elem_id(element)
-            if filter_mode == 'filter_for_page':
-                res_filter = filter_for_page(node_name, text_elem, id_elem)
-            elif filter_mode == 'filter_for_main_menu':
-                res_filter = filter_for_main_menu(node_name, text_elem, id_elem)
-            if res_filter == False:
-                if cheсk_in_except_table(text_elem, id_elem) == False:
-                    dict_elem = {
-                        'key_table':None,
-                        'id_elem':id_elem,
-                        'node_name':node_name,
-                        'text_elem':text_elem,
-                        'rect_elem':rect_elem,
-                        'click': False,
-                        'table': {'table':tuple(), 'len_table':0, 'number_of_pages':0, 'context_tables':tuple()}
-                    }
+            dict_elem = {
+                'id_elem':get_elem_id(element),
+                'node_name':get_elem_nodname(element),
+                'text_elem':get_elem_text(element),
+                'rect_elem':rect_elem,
+                'table': {'dir':tuple(), 'table':tuple(), 'len_table':0, 'number_of_pages':0, 'context_tables':tuple()}
+            }
     return dict_elem

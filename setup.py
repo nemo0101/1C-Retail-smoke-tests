@@ -6,7 +6,7 @@ setup(
     version='0.30',
     packages=find_packages(),
     long_description=open(join(dirname(__file__), 'README.md')).read(),
-    entry_points={'console_scripts':['test_1c = test_1c.main:main']},
+    entry_points={'console_scripts':['retail-smoke = retail-smoke.main:main']},
     include_package_data=True,
     install_requires=[
         'selenium==3.141.0',
@@ -16,5 +16,5 @@ setup(
     license='',
     author="Kuznetsov Gregory",
     author_email="a925041@yandex.ru",
-    url = '',
+    url = 'https://github.com/nemo0101/1C-Retail-smoke-tests',
 )

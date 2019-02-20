@@ -233,6 +233,9 @@ def eval_new_table(base_table:dict, current_table:dict):
     flag_equal = False
     for dict_element in current_table['table']:
         for x in base_table['table']:
+            #if x['text_elem'] == dict_element['text_elem'] and \
+               #x['rect_elem']['x'] == dict_element['rect_elem']['x'] and \
+               #x['rect_elem']['y'] == dict_element['rect_elem']['y']:
             if x['id_elem'] == dict_element['id_elem']:
                 flag_equal = True
                 break
@@ -353,6 +356,14 @@ def test(curr_table, main_data:object):
     return tuple(res_table)
 
 
+def check_table_elements(main_data):
+    table = main_data.table_elements()
+    for val in table:
+        if val['table'] != None:
+            main_data = start(main_data)
+    return main_data
+
+
 def start(main_data:object):
     '''
     основной обход по таблицам. 
@@ -370,6 +381,10 @@ def start(main_data:object):
             val['len_table'] = None
             val['number_of_pages'] = None
             val['context_tables'] = None
+
+    main_data.set_table_elements(table)
+    main_data = check_table_elements(main_data)
+    return main_data
 
 
 def get_page_info(main_data:object, x:dict, y:dict):
@@ -400,7 +415,7 @@ def go_menu(main_data:object):
                 get_page_info(main_data, x, y)
             )
     main_data.set_table_elements(tuple(list_curr_table))
-    start(main_data)
+    main_data = start(main_data)
 
 
 def page_full_cycle_go(main_data:object):

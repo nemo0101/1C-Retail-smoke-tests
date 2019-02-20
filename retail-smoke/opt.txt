@@ -24,7 +24,7 @@ base_url=http://localhost/InfoBase2/
 auth_win=userName
 #
 # 3) логин базы (id элемента, значение для ввода)
-login=userName, Маркетолог
+login=userName, Кассир
 #
 # 4) пароль базы (id элемента, значение для ввода)
 password=userPassword,

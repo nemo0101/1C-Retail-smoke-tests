@@ -11,7 +11,7 @@ setup(
     install_requires=[
         'selenium==3.141.0',
         'Pillow==5.3.0',
-        'pywin32==223'
+        'pywin32==301'
         ],
     license='',
     author="Kuznetsov Gregory",

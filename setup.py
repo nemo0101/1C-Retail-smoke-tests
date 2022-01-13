@@ -10,7 +10,7 @@ setup(
     include_package_data=True,
     install_requires=[
         'selenium==3.141.0',
-        'Pillow==5.3.0',
+        'Pillow==9.0.0',
         'pywin32==223'
         ],
     license='',
